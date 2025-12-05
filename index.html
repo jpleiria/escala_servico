@@ -6,7 +6,6 @@
     <title>Escala de Serviço - CBSLeiria</title>
     <link rel="icon" href="favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Biblioteca para gerar imagem -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -19,9 +18,34 @@
         input:focus { outline: none; border-color: #dc2626; z-index: 10; }
         .group-header { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.25rem 0.5rem; }
 
+        /* Estilo da lista de sugestões (Autocomplete) */
+        .suggestions-box {
+            position: absolute;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 100; /* Z-index alto para ficar acima de tudo */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            top: 100%;
+            left: 0;
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+        .suggestion-item {
+            padding: 0.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            background-color: white;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background-color: #fef2f2; color: #dc2626; } /* Hover vermelho claro */
+        
         /* Estilos específicos para Impressão (PDF) */
         @media print {
-            .no-print { display: none !important; }
+            .no-print, .suggestions-box { display: none !important; }
             body { background-color: white; padding-bottom: 0; }
             input { border: none !important; background: transparent !important; padding-left: 0; }
             .shadow-sm, .shadow-lg { box-shadow: none !important; }
@@ -36,13 +60,10 @@
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 pb-20">
 
-    <!-- Wrapper principal para captura (Inclui Header e Main) -->
     <div id="export-container" class="bg-slate-100">
         
-        <!-- Header -->
         <header class="bg-red-700 text-white shadow-sm sticky top-0 z-30 transition-transform">
             <div class="max-w-2xl mx-auto px-3 py-2 flex items-center justify-between gap-2">
-                <!-- Título e Ícone -->
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -50,11 +71,9 @@
                     <h1 class="text-xs sm:text-sm font-bold uppercase tracking-wide leading-tight">Escala<br class="block sm:hidden"> Serviço</h1>
                 </div>
                 
-                <!-- Data e Botões -->
                 <div class="flex items-center gap-2">
                      <div id="date-display" class="text-[10px] sm:text-xs font-bold bg-red-800 px-2 py-1 rounded text-white border border-red-600 shadow-inner whitespace-nowrap"></div>
                      
-                     <!-- Botões de Exportação -->
                      <div class="flex gap-1">
                         <button onclick="downloadImage()" class="no-print bg-white/20 hover:bg-white/30 text-white p-1.5 rounded transition-colors" title="Guardar como Imagem">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -67,170 +86,177 @@
             </div>
         </header>
 
-        <!-- Main Content -->
         <main class="max-w-2xl mx-auto px-2 py-2 space-y-2">
 
-            <!-- 1. Chefe de Serviço -->
             <div class="bg-white rounded border-l-4 border-l-yellow-500 border border-slate-300 shadow-sm p-2">
                 <div class="flex items-center gap-2">
                     <div class="w-8 flex justify-center"><svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg></div>
-                    <div class="flex-grow flex gap-1 relative">
+                    <div class="flex-grow flex gap-1 relative input-group">
                         <input type="number" id="chefe_servico_num" placeholder="Nº" class="num-input bg-yellow-50 border border-slate-300 rounded compact-input">
-                        <input type="text" id="chefe_servico_nome" placeholder="Chefe de Serviço" class="flex-grow bg-yellow-50 border border-slate-300 rounded px-2 compact-input font-bold text-slate-900">
+                        <div class="relative flex-grow">
+                            <input type="text" id="chefe_servico_nome" placeholder="Chefe de Serviço" class="w-full bg-yellow-50 border border-slate-300 rounded px-2 compact-input font-bold text-slate-900" autocomplete="off">
+                            </div>
                         <button onclick="clearRow('chefe_servico')" class="no-print px-2 text-slate-300 hover:text-red-600 transition-colors"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg></button>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. CMOS Block -->
-            <div class="bg-white rounded border border-slate-300 overflow-hidden shadow-sm">
-                <div class="bg-slate-700 text-white group-header flex items-center justify-between">
+            <div class="bg-white rounded border border-slate-300 shadow-sm">
+                <div class="bg-slate-700 text-white rounded-t group-header flex items-center justify-between">
                     <span>CMOS (Comunicações)</span>
                     <svg class="w-3 h-3 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </div>
                 <div class="p-2 space-y-1.5">
-                    <!-- Row -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right">Chefe Equipa</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="chefe_cmos_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
-                            <input type="text" id="chefe_cmos_nome" class="flex-grow bg-slate-50 border border-slate-200 rounded px-2 compact-input">
+                            <div class="relative flex-grow">
+                                <input type="text" id="chefe_cmos_nome" class="w-full bg-slate-50 border border-slate-200 rounded px-2 compact-input" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('chefe_cmos')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
-                    <!-- Row -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right">Operador</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="operador_cmos_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
-                            <input type="text" id="operador_cmos_nome" class="flex-grow bg-slate-50 border border-slate-200 rounded px-2 compact-input">
+                            <div class="relative flex-grow">
+                                <input type="text" id="operador_cmos_nome" class="w-full bg-slate-50 border border-slate-200 rounded px-2 compact-input" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('operador_cmos')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. INEM Block -->
-            <div class="bg-white rounded border border-yellow-400 overflow-hidden shadow-sm">
-                <div class="bg-yellow-400 text-blue-900 group-header flex items-center justify-between">
+            <div class="bg-white rounded border border-yellow-400 shadow-sm">
+                <div class="bg-yellow-400 text-blue-900 rounded-t group-header flex items-center justify-between">
                     <span>INEM</span>
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                 </div>
                 <div class="p-2 space-y-1.5">
-                    <!-- Row -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right text-blue-900">Socorrista</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="inem_soc_num" placeholder="Nº" class="num-input bg-yellow-50 border border-yellow-200 rounded compact-input">
-                            <input type="text" id="inem_soc_nome" class="flex-grow bg-yellow-50 border border-yellow-200 rounded px-2 compact-input">
+                            <div class="relative flex-grow">
+                                <input type="text" id="inem_soc_nome" class="w-full bg-yellow-50 border border-yellow-200 rounded px-2 compact-input" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('inem_soc')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
-                    <!-- Row -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right text-blue-900">Motorista</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="inem_mot_num" placeholder="Nº" class="num-input bg-yellow-50 border border-yellow-200 rounded compact-input">
-                            <input type="text" id="inem_mot_nome" class="flex-grow bg-yellow-50 border border-yellow-200 rounded px-2 compact-input">
+                            <div class="relative flex-grow">
+                                <input type="text" id="inem_mot_nome" class="w-full bg-yellow-50 border border-yellow-200 rounded px-2 compact-input" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('inem_mot')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 4. Equipa 1 -->
-            <div class="bg-white rounded border border-slate-300 overflow-hidden shadow-sm">
-                <div class="bg-red-50 text-red-800 border-b border-red-100 group-header flex items-center justify-between">
+            <div class="bg-white rounded border border-slate-300 shadow-sm">
+                <div class="bg-red-50 text-red-800 rounded-t border-b border-red-100 group-header flex items-center justify-between">
                     <span>1.ª Equipa</span>
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 </div>
                 <div class="p-2 space-y-1.5">
-                    <!-- Chefe -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right text-red-700">Chefe Equipa</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq1_chefe_num" placeholder="Nº" class="num-input bg-red-50 border border-red-100 rounded compact-input">
-                            <input type="text" id="eq1_chefe_nome" class="flex-grow bg-red-50 border border-red-100 rounded px-2 compact-input font-semibold">
+                            <div class="relative flex-grow">
+                                <input type="text" id="eq1_chefe_nome" class="w-full bg-red-50 border border-red-100 rounded px-2 compact-input font-semibold" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('eq1_chefe')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
-                    <!-- B1 -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right">Bombeiro 1</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq1_b1_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
-                            <input type="text" id="eq1_b1_nome" class="flex-grow bg-slate-50 border border-slate-200 rounded px-2 compact-input">
+                            <div class="relative flex-grow">
+                                <input type="text" id="eq1_b1_nome" class="w-full bg-slate-50 border border-slate-200 rounded px-2 compact-input" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('eq1_b1')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
-                    <!-- B2 -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right">Bombeiro 2</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq1_b2_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
-                            <input type="text" id="eq1_b2_nome" class="flex-grow bg-slate-50 border border-slate-200 rounded px-2 compact-input">
+                            <div class="relative flex-grow">
+                                <input type="text" id="eq1_b2_nome" class="w-full bg-slate-50 border border-slate-200 rounded px-2 compact-input" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('eq1_b2')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
-                    <!-- B3 -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right">Bombeiro 3</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq1_b3_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
-                            <input type="text" id="eq1_b3_nome" class="flex-grow bg-slate-50 border border-slate-200 rounded px-2 compact-input">
+                            <div class="relative flex-grow">
+                                <input type="text" id="eq1_b3_nome" class="w-full bg-slate-50 border border-slate-200 rounded px-2 compact-input" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('eq1_b3')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
-                     <!-- Mot 1 -->
-                    <div class="flex items-center gap-2">
+                     <div class="flex items-center gap-2">
                         <span class="role-label text-right text-slate-600">Motorista 1</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq1_mot_num" placeholder="Nº" class="num-input bg-slate-100 border border-slate-300 rounded compact-input">
-                            <input type="text" id="eq1_mot_nome" class="flex-grow bg-slate-100 border border-slate-300 rounded px-2 compact-input font-medium">
+                            <div class="relative flex-grow">
+                                <input type="text" id="eq1_mot_nome" class="w-full bg-slate-100 border border-slate-300 rounded px-2 compact-input font-medium" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('eq1_mot')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 5. Equipa 2 -->
-            <div class="bg-white rounded border border-slate-300 overflow-hidden shadow-sm">
-                <div class="bg-slate-100 text-slate-600 border-b border-slate-200 group-header flex items-center justify-between">
+            <div class="bg-white rounded border border-slate-300 shadow-sm">
+                <div class="bg-slate-100 text-slate-600 rounded-t border-b border-slate-200 group-header flex items-center justify-between">
                     <span>2.ª Equipa</span>
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                 </div>
                 <div class="p-2 space-y-1.5">
-                    <!-- B4 -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right">Bombeiro 4</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq2_b4_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
-                            <input type="text" id="eq2_b4_nome" class="flex-grow bg-slate-50 border border-slate-200 rounded px-2 compact-input">
+                            <div class="relative flex-grow">
+                                <input type="text" id="eq2_b4_nome" class="w-full bg-slate-50 border border-slate-200 rounded px-2 compact-input" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('eq2_b4')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
-                    <!-- B5 -->
                     <div class="flex items-center gap-2">
                         <span class="role-label text-right">Bombeiro 5</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq2_b5_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
-                            <input type="text" id="eq2_b5_nome" class="flex-grow bg-slate-50 border border-slate-200 rounded px-2 compact-input">
+                            <div class="relative flex-grow">
+                                <input type="text" id="eq2_b5_nome" class="w-full bg-slate-50 border border-slate-200 rounded px-2 compact-input" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('eq2_b5')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
-                     <!-- Mot 2 -->
-                    <div class="flex items-center gap-2">
+                     <div class="flex items-center gap-2">
                         <span class="role-label text-right text-slate-600">Motorista 2</span>
-                        <div class="flex-grow flex gap-1">
+                        <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq2_mot_num" placeholder="Nº" class="num-input bg-slate-100 border border-slate-300 rounded compact-input">
-                            <input type="text" id="eq2_mot_nome" class="flex-grow bg-slate-100 border border-slate-300 rounded px-2 compact-input font-medium">
+                            <div class="relative flex-grow">
+                                <input type="text" id="eq2_mot_nome" class="w-full bg-slate-100 border border-slate-300 rounded px-2 compact-input font-medium" autocomplete="off">
+                            </div>
                             <button onclick="clearRow('eq2_mot')" class="no-print px-1 text-slate-300 hover:text-red-600"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Extra Notes Field -->
             <div class="bg-white rounded border border-slate-200 p-2 shadow-sm">
                 <textarea id="obs_gerais" placeholder="Observações / Reforços..." class="w-full text-xs text-slate-600 border-0 bg-transparent resize-none focus:ring-0 p-1" rows="2"></textarea>
             </div>
@@ -240,10 +266,7 @@
         </div>
 
         </main>
-    </div> <!-- Fim do Wrapper de Exportação -->
-
-    <!-- Footer Controls (Fixed) -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-2 shadow-lg z-30 no-print">
+    </div> <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-2 shadow-lg z-30 no-print">
         <div class="max-w-2xl mx-auto flex justify-center">
             <button onclick="openModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -252,7 +275,6 @@
         </div>
     </div>
 
-    <!-- Confirmation Modal -->
     <div id="confirmModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300 backdrop-blur-sm no-print">
         <div class="bg-white rounded shadow-2xl max-w-xs w-full p-4 transform scale-95 transition-transform duration-300 border-2 border-red-500" id="modalContent">
             <div class="text-center mb-4">
@@ -279,11 +301,78 @@
             'eq2_b4', 'eq2_b5', 'eq2_mot'
         ];
 
+        // BASE DE DADOS DE PESSOAL (Importado do CSV)
+        const pessoalDB = [
+            { n: "4", nome: "JOSÉ MANUEL VALENTE RITO" },
+            { n: "5", nome: "DOMINICIANO MARQUES GODINHO" },
+            { n: "40", nome: "PAULO JOSÉ GOMES ASCENSO" },
+            { n: "14", nome: "ÁLVARO JOSÉ INÁCIO OLIVEIRA" },
+            { n: "21", nome: "HELDER PRAGOSA VIEIRA" },
+            { n: "25", nome: "LUÍS MIGUEL OLIVEIRA GODINHO" },
+            { n: "26", nome: "JOSÉ CARLOS MATOS PRAGOSA" },
+            { n: "32", nome: "DAVID ROGÉRIO ROSÁRIO SILVA" },
+            { n: "33", nome: "DAVID SAMUEL AGUIAR COELHO" },
+            { n: "47", nome: "VASCO ANTÓNIO RIBEIRO SANTOS" },
+            { n: "54", nome: "MARCO ANTÓNIO ALMEIDA PEREIRA" },
+            { n: "65", nome: "JOÃO ANDRÉ MARTINHO HIPÓLITO" },
+            { n: "71", nome: "RUI FILIPE VERÍSSIMO CARVALHO" },
+            { n: "73", nome: "GIANLUCA DUARTE SANTO" },
+            { n: "75", nome: "EDUARDO SILVA GONÇALVES" },
+            { n: "13", nome: "PAULO JORGE N. M.FIGUEIREDO OLIVEIRA" },
+            { n: "18", nome: "JOSÉ CARLOS PEREIRA" },
+            { n: "23", nome: "EDUARDO J. MONTEIRO BATISTA PINHEIRO" },
+            { n: "28", nome: "RICARDO J. RODRIGUES DIAS APARÍCIO" },
+            { n: "34", nome: "RUI MIGUEL PEDROSA JOÃO" },
+            { n: "36", nome: "JAIME VALA VIEIRA" },
+            { n: "42", nome: "SÉRGIO ALEXANDRE RODRIGUES FERREIRA" },
+            { n: "52", nome: "JOSÉ CARLOS CORREIA FONSECA" },
+            { n: "57", nome: "ANDRÉ FRANCO DOMINGUES" },
+            { n: "59", nome: "PEDRO RICARDO MOREIRA FOLGADO" },
+            { n: "68", nome: "RICARDO PEREIRA SARAMAGO" },
+            { n: "76", nome: "TIAGO ANDRÉ RODRIGUES VIANA CARMO" },
+            { n: "16", nome: "NUNO MIGUEL MATOS NARCISO" },
+            { n: "20", nome: "ELISEU SOBREIRA RAÍNHO" },
+            { n: "24", nome: "NARCISO JESUS FABIÃO" },
+            { n: "38", nome: "GONÇALO MIGUEL FERREIRA AMADO" },
+            { n: "39", nome: "VITOR MANUEL FILIPE COSTA" },
+            { n: "43", nome: "JOSÉ FERNANDO BAPTISTA CARDOSO" },
+            { n: "44", nome: "LUÍS CARLOS SIMÕES DIONÍSIO" },
+            { n: "51", nome: "PEDRO MIGUEL PATRÍCIO ROSADO" },
+            { n: "55", nome: "GONÇALO SILVA ESTEVES" },
+            { n: "64", nome: "RAFAEL RODRIGUES OLIVEIRA" },
+            { n: "67", nome: "RAFAEL NEVES MARQUES" },
+            { n: "70", nome: "ANTÓNIO J. MONTEIRO QUARESMA" },
+            { n: "17", nome: "GONÇALO RUI PRAGOSA COSTA" },
+            { n: "22", nome: "FREDERICO ANTONIO" },
+            { n: "27", nome: "RUI MIGUEL LOPES CARNIDE" },
+            { n: "29", nome: "JOÃO PAULO SILVA LOURENÇO" },
+            { n: "41", nome: "MARIA CONCEIÇÃO FERREIRA ALVES" },
+            { n: "46", nome: "GONÇALO RUI ANTUNES VICENTE" },
+            { n: "48", nome: "JOÃO JOSÉ FERREIRA MURRAÇAS" },
+            { n: "50", nome: "PAULO JOSÉ SILVA JORGE" },
+            { n: "56", nome: "HUGO MANUEL GUERRA AFONSO" },
+            { n: "69", nome: "JOSÉ ANTÓNIO BAGAGEM RUIVO" },
+            { n: "72", nome: "RUBEN JORGE CLEMENTE" },
+            { n: "15", nome: "FILIPE MANUEL NEVES SILVA" },
+            { n: "19", nome: "RUI MIGUEL PEREIRA DOMINGUES" },
+            { n: "31", nome: "JOÃO PAULO DE ALMEIDA PEREIRA" },
+            { n: "35", nome: "NUNO ALEXANDRE COSTA JORDÃO" },
+            { n: "37", nome: "DIOGO MIGUEL CRUZ MARECOS" },
+            { n: "45", nome: "FERNANDO A. GONÇALVES FERNANDES" },
+            { n: "58", nome: "PAULO JORGE SOUSA GODINHO" },
+            { n: "61", nome: "VITOR HUGO CAETANO COSTA PEREIRA" },
+            { n: "62", nome: "FÁBIO RAFAEL MIRANDA PIRES" },
+            { n: "63", nome: "TIAGO MIGUEL SANTOS NARCISO" },
+            { n: "66", nome: "DIOGO JOSÉ FERREIRA AMADO" },
+            { n: "74", nome: "RITA ISABEL LOPES DOMINGUES" }
+        ];
+
         window.onload = function() {
-            // Restore both Num and Nome for each role
+            // Restore inputs and setup smart search
             rolePrefixes.forEach(prefix => {
                 restoreInput(prefix + '_num');
                 restoreInput(prefix + '_nome');
+                setupSmartSearch(prefix);
             });
             // Restore Obs
             const obs = document.getElementById('obs_gerais');
@@ -297,6 +386,13 @@
             const dateOptions = { weekday: 'long', day: 'numeric', month: 'long' };
             const today = new Date().toLocaleDateString('pt-PT', dateOptions);
             document.getElementById('date-display').textContent = today.toUpperCase();
+
+            // Click outside to close suggestions
+            document.addEventListener('click', function(e) {
+                if(!e.target.closest('.input-group')) {
+                    closeAllSuggestions();
+                }
+            });
         };
 
         function restoreInput(id) {
@@ -312,6 +408,76 @@
                 localStorage.setItem('bombeiros_app_v4_' + id, e.target.value);
             });
         }
+
+        // --- NOVA FUNÇÃO: Configurar pesquisa inteligente ---
+        function setupSmartSearch(prefix) {
+            const numInput = document.getElementById(prefix + '_num');
+            const nameInput = document.getElementById(prefix + '_nome');
+            
+            if(!numInput || !nameInput) return;
+
+            // 1. Procurar por Número
+            numInput.addEventListener('input', function() {
+                const val = this.value.trim();
+                const found = pessoalDB.find(p => p.n === val);
+                if(found) {
+                    nameInput.value = found.nome;
+                    // Forçar salvamento no localStorage pois alterámos programaticamente
+                    localStorage.setItem('bombeiros_app_v4_' + prefix + '_nome', found.nome);
+                }
+            });
+
+            // 2. Procurar por Nome (Autocomplete)
+            nameInput.addEventListener('input', function() {
+                const val = this.value.toLowerCase().trim();
+                closeAllSuggestions();
+                
+                if (!val) return;
+
+                const matches = pessoalDB.filter(p => p.nome.toLowerCase().includes(val));
+                
+                if (matches.length > 0) {
+                    showSuggestions(nameInput, matches, prefix);
+                }
+            });
+        }
+
+        function showSuggestions(inputElement, matches, prefix) {
+            const container = inputElement.parentElement; // A div relativa
+            
+            // Criar caixa de sugestão
+            const list = document.createElement('div');
+            list.className = 'suggestions-box';
+            
+            matches.forEach(match => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                // Realçar parte do texto (opcional, aqui simples)
+                item.innerHTML = `<span class="font-bold text-red-700">${match.n}</span> - ${match.nome}`;
+                
+                item.addEventListener('click', function() {
+                    // Preencher campos
+                    document.getElementById(prefix + '_nome').value = match.nome;
+                    document.getElementById(prefix + '_num').value = match.n;
+                    
+                    // Salvar no Storage
+                    localStorage.setItem('bombeiros_app_v4_' + prefix + '_nome', match.nome);
+                    localStorage.setItem('bombeiros_app_v4_' + prefix + '_num', match.n);
+                    
+                    closeAllSuggestions();
+                });
+                
+                list.appendChild(item);
+            });
+            
+            container.appendChild(list);
+        }
+
+        function closeAllSuggestions() {
+            const lists = document.querySelectorAll('.suggestions-box');
+            lists.forEach(l => l.remove());
+        }
+        // ----------------------------------------------------
 
         // Clear both Number and Name for a specific row
         function clearRow(prefix) {
@@ -330,6 +496,7 @@
                 localStorage.removeItem('bombeiros_app_v4_' + nomeId);
                 elNome.focus();
             }
+            closeAllSuggestions();
         }
 
         // Image Download Function
@@ -399,6 +566,7 @@
             document.getElementById('obs_gerais').value = '';
             localStorage.removeItem('bombeiros_app_v4_obs');
             
+            closeAllSuggestions();
             closeModal();
         }
     </script>
