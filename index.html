@@ -409,7 +409,7 @@
             });
         }
 
-        // --- NOVA FUNÇÃO: Configurar pesquisa inteligente ---
+        // --- NOVA FUNÇÃO: Configurar pesquisa inteligente (CORRIGIDA COM ORDENAÇÃO) ---
         function setupSmartSearch(prefix) {
             const numInput = document.getElementById(prefix + '_num');
             const nameInput = document.getElementById(prefix + '_nome');
@@ -427,14 +427,17 @@
                 }
             });
 
-            // 2. Procurar por Nome (Autocomplete)
+            // 2. Procurar por Nome (Autocomplete) - COM ORDENAÇÃO POR NÚMERO
             nameInput.addEventListener('input', function() {
                 const val = this.value.toLowerCase().trim();
                 closeAllSuggestions();
                 
                 if (!val) return;
 
-                const matches = pessoalDB.filter(p => p.nome.toLowerCase().includes(val));
+                // Filtra pelo nome e ordena pelo número (Crescente)
+                const matches = pessoalDB
+                    .filter(p => p.nome.toLowerCase().includes(val))
+                    .sort((a, b) => parseInt(a.n) - parseInt(b.n));
                 
                 if (matches.length > 0) {
                     showSuggestions(nameInput, matches, prefix);
