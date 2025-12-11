@@ -176,7 +176,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="role-label text-right">Bombeiro 1</span>
+                        <span class="role-label text-right text-red-700">Bombeiro 1</span>
                         <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq1_b1_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
                             <div class="relative flex-grow">
@@ -186,7 +186,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="role-label text-right">Bombeiro 2</span>
+                        <span class="role-label text-right text-red-700">Bombeiro 2</span>
                         <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq1_b2_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
                             <div class="relative flex-grow">
@@ -196,7 +196,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="role-label text-right">Bombeiro 3</span>
+                        <span class="role-label text-right text-red-700">Bombeiro 3</span>
                         <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq1_b3_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
                             <div class="relative flex-grow">
@@ -206,7 +206,7 @@
                         </div>
                     </div>
                      <div class="flex items-center gap-2">
-                        <span class="role-label text-right text-slate-600">Motorista 1</span>
+                        <span class="role-label text-right text-red-700">Motorista 1</span>
                         <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq1_mot_num" placeholder="Nº" class="num-input bg-slate-100 border border-slate-300 rounded compact-input">
                             <div class="relative flex-grow">
@@ -225,7 +225,7 @@
                 </div>
                 <div class="p-2 space-y-1.5">
                     <div class="flex items-center gap-2">
-                        <span class="role-label text-right">Bombeiro 4</span>
+                        <span class="role-label text-right text-slate-600">Bombeiro 4</span>
                         <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq2_b4_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
                             <div class="relative flex-grow">
@@ -235,7 +235,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="role-label text-right">Bombeiro 5</span>
+                        <span class="role-label text-right text-slate-600">Bombeiro 5</span>
                         <div class="flex-grow flex gap-1 relative input-group">
                             <input type="number" id="eq2_b5_num" placeholder="Nº" class="num-input bg-slate-50 border border-slate-200 rounded compact-input">
                             <div class="relative flex-grow">
@@ -382,10 +382,22 @@
                 obs.addEventListener('input', (e) => localStorage.setItem('bombeiros_app_v4_obs', e.target.value));
             }
 
-            // Set Date
-            const dateOptions = { weekday: 'long', day: 'numeric', month: 'long' };
-            const today = new Date().toLocaleDateString('pt-PT', dateOptions);
-            document.getElementById('date-display').textContent = today.toUpperCase();
+            // --- DATE AUTO-UPDATE LOGIC ---
+            function updateDate() {
+                const dateOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+                const today = new Date().toLocaleDateString('pt-PT', dateOptions);
+                const displayElement = document.getElementById('date-display');
+                if(displayElement) {
+                    displayElement.textContent = today.toUpperCase();
+                }
+            }
+
+            // Run immediately
+            updateDate();
+
+            // Run every 60000ms (1 minute)
+            setInterval(updateDate, 60000);
+            // ------------------------------
 
             // Click outside to close suggestions
             document.addEventListener('click', function(e) {
