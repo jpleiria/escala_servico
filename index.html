@@ -7,6 +7,9 @@
     <link rel="icon" href="favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- Firebase (Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -71,6 +74,7 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
+                     <div id="sync-status" class="text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded text-white border shadow-inner whitespace-nowrap bg-slate-500 border-slate-400" title="Estado da sincronização">A ligar...</div>
                      <div id="date-display" class="text-[10px] sm:text-xs font-bold bg-red-800 px-2 py-1 rounded text-white border border-red-600 shadow-inner whitespace-nowrap"></div>
                      
                      <div class="flex gap-1">
@@ -292,6 +296,24 @@
     </div>
 
     <script>
+        // ================= FIREBASE CONFIG =================
+        // Substitui os valores abaixo pelos da tua consola Firebase:
+        // Firebase Console > Definições do Projeto > As tuas apps > SDK setup and configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBALnhysGE4XvgFFsZunNTdPlAL97ZD-BQ",
+            authDomain: "escala-servico-bsl-d5114.firebaseapp.com",
+            projectId: "escala-servico-bsl-d5114",
+            storageBucket: "escala-servico-bsl-d5114.firebasestorage.app",
+            messagingSenderId: "64190427590",
+            appId: "1:64190427590:web:533e9928720374fc8cc2c7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        // Documento único partilhado por todos (escala em tempo real)
+        const docRef = db.collection('escalas').doc('atual');
+        // ====================================================
+
         // Prefix list of all roles
         const rolePrefixes = [
             'chefe_servico', 
@@ -370,19 +392,20 @@
         ];
 
         window.onload = function() {
-            // Restore inputs and setup smart search
+            // Setup inputs (listeners de escrita) e pesquisa inteligente
             rolePrefixes.forEach(prefix => {
-                restoreInput(prefix + '_num');
-                restoreInput(prefix + '_nome');
+                setupFieldSync(prefix + '_num');
+                setupFieldSync(prefix + '_nome');
                 setupSmartSearch(prefix);
             });
-            // Restore Obs
+            // Obs gerais
             const obs = document.getElementById('obs_gerais');
             if(obs) {
-                const saved = localStorage.getItem('bombeiros_app_v4_obs');
-                if(saved) obs.value = saved;
-                obs.addEventListener('input', (e) => localStorage.setItem('bombeiros_app_v4_obs', e.target.value));
+                obs.addEventListener('input', (e) => queueWrite('obs_gerais', e.target.value));
             }
+
+            // Ligar à escala partilhada em tempo real
+            startFirestoreSync();
 
             // --- DATE AUTO-UPDATE LOGIC ---
             function updateDate() {
@@ -409,19 +432,76 @@
             });
         };
 
-        function restoreInput(id) {
+        // Liga um input a Firestore: qualquer alteração é escrita (com debounce)
+        function setupFieldSync(id) {
             const el = document.getElementById(id);
             if(!el) return;
-            
-            const savedValue = localStorage.getItem('bombeiros_app_v4_' + id);
-            if (savedValue) {
-                el.value = savedValue;
-            }
-            
+
             el.addEventListener('input', function(e) {
-                localStorage.setItem('bombeiros_app_v4_' + id, e.target.value);
+                queueWrite(id, e.target.value);
             });
         }
+
+        // --- SINCRONIZAÇÃO COM FIRESTORE (documento único partilhado) ---
+        const pendingWrites = {};
+        let writeTimer = null;
+
+        function queueWrite(id, value) {
+            pendingWrites[id] = value;
+            clearTimeout(writeTimer);
+            writeTimer = setTimeout(flushWrites, 400);
+        }
+
+        function flushWrites() {
+            const toWrite = { ...pendingWrites };
+            if (Object.keys(toWrite).length === 0) return;
+            Object.keys(pendingWrites).forEach(k => delete pendingWrites[k]);
+
+            setSyncStatus('a guardar...', 'bg-amber-500 border-amber-400');
+            docRef.set(toWrite, { merge: true })
+                .then(() => setSyncStatus('sincronizado', 'bg-emerald-600 border-emerald-500'))
+                .catch(err => {
+                    console.error('Erro ao guardar na Firestore:', err);
+                    setSyncStatus('erro ao guardar', 'bg-red-800 border-red-700');
+                });
+        }
+
+        function startFirestoreSync() {
+            docRef.onSnapshot(function(snap) {
+                setSyncStatus('sincronizado', 'bg-emerald-600 border-emerald-500');
+                const data = snap.data();
+                if (!data) return;
+
+                // Todos os campos de pessoal
+                rolePrefixes.forEach(prefix => {
+                    applyRemoteValue(prefix + '_num', data[prefix + '_num']);
+                    applyRemoteValue(prefix + '_nome', data[prefix + '_nome']);
+                });
+                // Observações
+                applyRemoteValue('obs_gerais', data['obs_gerais']);
+            }, function(err) {
+                console.error('Erro de sincronização:', err);
+                setSyncStatus('sem ligação', 'bg-red-800 border-red-700');
+            });
+        }
+
+        // Aplica um valor vindo do servidor ao campo, exceto se o utilizador
+        // estiver a escrever nesse campo neste preciso momento.
+        function applyRemoteValue(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (document.activeElement === el) return; // não interromper quem está a escrever
+            const newVal = value ?? '';
+            if (el.value !== newVal) el.value = newVal;
+        }
+
+        function setSyncStatus(text, classes) {
+            const el = document.getElementById('sync-status');
+            if (!el) return;
+            el.textContent = text;
+            el.className = 'text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded text-white border shadow-inner whitespace-nowrap ' + classes;
+        }
+        // ------------------------------------------------------------------
 
         // --- NOVA FUNÇÃO: Configurar pesquisa inteligente (CORRIGIDA COM ORDENAÇÃO) ---
         function setupSmartSearch(prefix) {
@@ -436,8 +516,8 @@
                 const found = pessoalDB.find(p => p.n === val);
                 if(found) {
                     nameInput.value = found.nome;
-                    // Forçar salvamento no localStorage pois alterámos programaticamente
-                    localStorage.setItem('bombeiros_app_v4_' + prefix + '_nome', found.nome);
+                    // Forçar gravação pois alterámos o campo programaticamente
+                    queueWrite(prefix + '_nome', found.nome);
                 }
             });
 
@@ -477,9 +557,9 @@
                     document.getElementById(prefix + '_nome').value = match.nome;
                     document.getElementById(prefix + '_num').value = match.n;
                     
-                    // Salvar no Storage
-                    localStorage.setItem('bombeiros_app_v4_' + prefix + '_nome', match.nome);
-                    localStorage.setItem('bombeiros_app_v4_' + prefix + '_num', match.n);
+                    // Gravar na escala partilhada
+                    queueWrite(prefix + '_nome', match.nome);
+                    queueWrite(prefix + '_num', match.n);
                     
                     closeAllSuggestions();
                 });
@@ -506,13 +586,14 @@
             
             if(elNum) {
                 elNum.value = '';
-                localStorage.removeItem('bombeiros_app_v4_' + numId);
+                queueWrite(numId, '');
             }
             if(elNome) {
                 elNome.value = '';
-                localStorage.removeItem('bombeiros_app_v4_' + nomeId);
+                queueWrite(nomeId, '');
                 elNome.focus();
             }
+            flushWrites();
             closeAllSuggestions();
         }
 
@@ -574,15 +655,16 @@
                 const elNome = document.getElementById(prefix + '_nome');
                 if(elNum) elNum.value = '';
                 if(elNome) elNome.value = '';
-                
-                // Clear Storage
-                localStorage.removeItem('bombeiros_app_v4_' + prefix + '_num');
-                localStorage.removeItem('bombeiros_app_v4_' + prefix + '_nome');
+
+                // Marcar para limpar na escala partilhada
+                queueWrite(prefix + '_num', '');
+                queueWrite(prefix + '_nome', '');
             });
             // Clear obs
             document.getElementById('obs_gerais').value = '';
-            localStorage.removeItem('bombeiros_app_v4_obs');
-            
+            queueWrite('obs_gerais', '');
+
+            flushWrites();
             closeAllSuggestions();
             closeModal();
         }
